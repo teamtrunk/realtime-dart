@@ -13,7 +13,7 @@ enum SocketStates { connecting, open, closing, closed, disconnected }
 
 enum ChannelStates { closed, errored, joined, joining, leaving }
 
-enum ChannelEvents { close, error, join, reply, leave, heartbeat }
+enum ChannelEvents { close, error, join, reply, leave, heartbeat, accessToken }
 
 extension SocketStatesName on SocketStates {
   String name() {

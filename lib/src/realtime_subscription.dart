@@ -19,6 +19,7 @@ class RealtimeSubscription {
   List<Push> _pushBuffer = [];
   List<Binding> _bindings = [];
   bool _joinedOnce = false;
+  bool get joinedOnce => _joinedOnce;
   late Push _joinPush;
   final Duration _timeout;
 
@@ -130,6 +131,10 @@ class RealtimeSubscription {
     }
 
     return pushEvent;
+  }
+
+  void updateJoinPayload(Map<String, dynamic> payload) {
+    _joinPush.updatePayload(payload);
   }
 
   /// Leaves the channel

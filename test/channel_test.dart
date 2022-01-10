@@ -52,6 +52,24 @@ void main() {
 
       expect(joinPush.timeout, const Duration(milliseconds: 2000));
     });
+
+    group('updateJoinPayload', () {
+      setUp(() {
+        socket = RealtimeClient(
+          'wss://example.com/socket',
+          timeout: const Duration(seconds: 1234),
+        );
+      });
+
+      // TODO: Write test
+      // test('updates channel joinPush payload', () {
+      //   const payloadStub = sinon.stub(channel.joinPush, 'updatePayload')
+
+      //   channel.updateJoinPayload({ user_token: 'token123' })
+
+      //   assert.ok(payloadStub.calledWith({ user_token: 'token123' }))
+      // })
+    });
   });
 
   group('onError', () {

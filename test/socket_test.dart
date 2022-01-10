@@ -399,6 +399,9 @@ void main() {
     });
   });
 
+  // TODO
+  group('setAuth', () {});
+
   group('sendHeartbeat', () {
     IOWebSocketChannel mockedSocketChannel;
     late RealtimeClient mockedSocket;

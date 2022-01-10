@@ -12,7 +12,7 @@ class Push {
   final ChannelEvents _event;
   String? _ref;
   String? _refEvent;
-  final Map<String, dynamic> payload;
+  Map<String, dynamic> payload;
   dynamic _receivedResp;
   Duration _timeout;
   Timer? _timeoutTimer;
@@ -58,6 +58,10 @@ class Push {
       ref: ref,
     );
     _channel.socket.push(message);
+  }
+
+  void updatePayload(Map<String, dynamic> newPayload) {
+    payload = {...payload, ...newPayload};
   }
 
   Push receive(String status, Callback callback) {

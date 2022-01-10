@@ -13,6 +13,7 @@ import 'package:realtime_client/src/websocket_stub.dart'
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 class RealtimeClient {
+  String? accessToken;
   List<RealtimeSubscription> channels = [];
   final String endPoint;
   final Map<String, String> headers;
@@ -193,6 +194,8 @@ class RealtimeClient {
   }
 
   /// Removes a subscription from the socket.
+  ///
+  /// [channel] An open subscription.
   void remove(RealtimeSubscription channel) {
     channels = channels.where((c) => c.joinRef() != channel.joinRef()).toList();
   }
@@ -253,6 +256,8 @@ class RealtimeClient {
       final ref = msg['ref'] as String?;
       if (ref != null && ref == pendingHeartbeatRef) {
         pendingHeartbeatRef = null;
+      } else if (event == payload['type']) {
+        _resetHeartbeat();
       }
 
       log(
@@ -274,38 +279,27 @@ class RealtimeClient {
     });
   }
 
-  void sendHeartbeat() {
-    if (!isConnected()) return;
-
-    if (pendingHeartbeatRef != null) {
-      pendingHeartbeatRef = null;
-      log(
-        'transport',
-        'heartbeat timeout. Attempting to re-establish connection',
-      );
-      conn?.sink.close(Constants.wsCloseNormal, 'heartbeat timeout');
-      return;
+  /// Sets the JWT access [token] used for channel subscription authorization and Realtime RLS.
+  void setAuth(String? token) {
+    accessToken = token;
+    try {
+      for (final channel in channels) {
+        if (channel.joinedOnce && channel.isJoined()) {
+          channel.push(ChannelEvents.accessToken, {
+            'access_token': token ?? '',
+          });
+        }
+      }
+    } catch (error) {
+      log('setAuth error', error.toString());
     }
-
-    pendingHeartbeatRef = makeRef();
-    final message = Message(
-      topic: 'phoenix',
-      event: ChannelEvents.heartbeat,
-      payload: {},
-      ref: pendingHeartbeatRef,
-    );
-    push(message);
   }
 
   void _onConnOpen() {
     log('transport', 'connected to ${endPointURL()}');
     _flushSendBuffer();
     reconnectTimer.reset();
-    if (heartbeatTimer != null) heartbeatTimer!.cancel();
-    heartbeatTimer = Timer.periodic(
-      Duration(milliseconds: heartbeatIntervalMs),
-      (Timer t) => sendHeartbeat(),
-    );
+    _resetHeartbeat();
     for (final callback in stateChangeCallbacks['open']!) {
       callback();
     }
@@ -359,5 +353,38 @@ class RealtimeClient {
       }
       sendBuffer = [];
     }
+  }
+
+  void _resetHeartbeat() {
+    pendingHeartbeatRef = null;
+    if (heartbeatTimer != null) heartbeatTimer!.cancel();
+    heartbeatTimer = Timer.periodic(
+      Duration(milliseconds: heartbeatIntervalMs),
+      (Timer t) => sendHeartbeat(),
+    );
+  }
+
+  void sendHeartbeat() {
+    if (!isConnected()) return;
+
+    if (pendingHeartbeatRef != null) {
+      pendingHeartbeatRef = null;
+      log(
+        'transport',
+        'heartbeat timeout. Attempting to re-establish connection',
+      );
+      conn?.sink.close(Constants.wsCloseNormal, 'heartbeat timeout');
+      return;
+    }
+
+    pendingHeartbeatRef = makeRef();
+    final message = Message(
+      topic: 'phoenix',
+      event: ChannelEvents.heartbeat,
+      payload: {},
+      ref: pendingHeartbeatRef,
+    );
+    push(message);
+    setAuth(accessToken);
   }
 }
